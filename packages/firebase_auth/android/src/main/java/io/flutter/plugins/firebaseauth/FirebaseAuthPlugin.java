@@ -12,6 +12,7 @@ import com.google.android.gms.tasks.OnCompleteListener;
 import com.google.android.gms.tasks.Task;
 import com.google.firebase.FirebaseApiNotAvailableException;
 import com.google.firebase.FirebaseApp;
+import android.util.Log;
 import com.google.firebase.FirebaseException;
 import com.google.firebase.FirebaseNetworkException;
 import com.google.firebase.FirebaseTooManyRequestsException;
@@ -119,7 +120,7 @@ public class FirebaseAuthPlugin implements MethodCallHandler {
         handleReauthenticateWithCredential(call, result, getAuth(call));
         break;
       case "linkWithCredential":
-        handleLinkWithEmailAndPassword(call, result, getAuth(call));
+        handleLinkWithCredential(call, result, getAuth(call));
         break;
       case "unlinkFromProvider":
         handleUnlinkFromProvider(call, result, getAuth(call));
@@ -266,26 +267,23 @@ public class FirebaseAuthPlugin implements MethodCallHandler {
   private void handleLinkWithEmailAndPassword(
       MethodCall call, Result result, FirebaseAuth firebaseAuth) {
     Map<String, String> arguments = call.arguments();
-    String provider = arguments.get("provider");
-    AuthCredential credential;
-    switch(provider) {
-      case "phone":
-          String verificationId = arguments.get("verificationId");
-          String smsCode = arguments.get("smsCode");
-          credential = PhoneAuthProvider.getCredential(verificationId, smsCode);
-          break;
-      case "password": 
-          String email = arguments.get("email");
-          String password = arguments.get("password");
-          credential = EmailAuthProvider.getCredential(email, password);
-          break;
-    }
-    if(credential != null) {
-      firebaseAuth
-          .getCurrentUser()
-          .linkWithCredential(credential)
-          .addOnCompleteListener(new SignInCompleteListener(result));
-    }
+    String email = arguments.get("email");
+    String password = arguments.get("password");
+
+    AuthCredential credential = EmailAuthProvider.getCredential(email, password);
+    firebaseAuth
+        .getCurrentUser()
+        .linkWithCredential(credential)
+        .addOnCompleteListener(new SignInCompleteListener(result));
+  }
+
+  private void handleLinkWithCredential(
+      MethodCall call, Result result, FirebaseAuth firebaseAuth) {
+    AuthCredential credential = getCredential((Map<String, Object>) call.arguments());
+    firebaseAuth
+        .getCurrentUser()
+        .linkWithCredential(credential)
+        .addOnCompleteListener(new SignInCompleteListener(result));
   }
 
   private void handleCurrentUser(
@@ -360,6 +358,7 @@ public class FirebaseAuthPlugin implements MethodCallHandler {
   private AuthCredential getCredential(Map<String, Object> arguments) {
     AuthCredential credential;
     Map<String, String> data = (Map<String, String>) arguments.get("data");
+    Log.d("handleLinkWithCredential", (String) arguments.get("provider"));
     switch ((String) arguments.get("provider")) {
       case EmailAuthProvider.PROVIDER_ID:
         {
@@ -392,6 +391,13 @@ public class FirebaseAuthPlugin implements MethodCallHandler {
         {
           String token = data.get("token");
           credential = GithubAuthProvider.getCredential(token);
+          break;
+        }
+      case PhoneAuthProvider.PROVIDER_ID:
+        {
+          String verificationId = data.get("verificationId");
+          String smsCode = data.get("smsCode");
+          credential = PhoneAuthProvider.getCredential(verificationId, smsCode);
           break;
         }
       default:
