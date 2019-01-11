@@ -269,12 +269,12 @@ public class FirebaseAuthPlugin implements MethodCallHandler {
     String provider = arguments.get("provider");
     AuthCredential credential;
     switch(provider) {
-      case 'phone':
+      case "phone":
           String verificationId = arguments.get("verificationId");
           String smsCode = arguments.get("smsCode");
           credential = PhoneAuthProvider.getCredential(verificationId, smsCode);
           break;
-      case 'password': 
+      case "password": 
           String email = arguments.get("email");
           String password = arguments.get("password");
           credential = EmailAuthProvider.getCredential(email, password);
