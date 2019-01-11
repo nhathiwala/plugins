@@ -266,14 +266,26 @@ public class FirebaseAuthPlugin implements MethodCallHandler {
   private void handleLinkWithEmailAndPassword(
       MethodCall call, Result result, FirebaseAuth firebaseAuth) {
     Map<String, String> arguments = call.arguments();
-    String email = arguments.get("email");
-    String password = arguments.get("password");
-
-    AuthCredential credential = EmailAuthProvider.getCredential(email, password);
-    firebaseAuth
-        .getCurrentUser()
-        .linkWithCredential(credential)
-        .addOnCompleteListener(new SignInCompleteListener(result));
+    String provider = arguments.get("provider");
+    AuthCredential credential;
+    switch(provider) {
+      case 'phone':
+          String verificationId = arguments.get("verificationId");
+          String smsCode = arguments.get("smsCode");
+          credential = PhoneAuthProvider.getCredential(verificationId, smsCode);
+          break;
+      case 'password': 
+          String email = arguments.get("email");
+          String password = arguments.get("password");
+          credential = EmailAuthProvider.getCredential(email, password);
+          break;
+    }
+    if(credential != null) {
+      firebaseAuth
+          .getCurrentUser()
+          .linkWithCredential(credential)
+          .addOnCompleteListener(new SignInCompleteListener(result));
+    }
   }
 
   private void handleCurrentUser(
